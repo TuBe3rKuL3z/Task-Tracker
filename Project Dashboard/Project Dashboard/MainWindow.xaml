@@ -1,0 +1,239 @@
+<Window x:Class="Project_Dashboard.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewmodels="clr-namespace:Project_Dashboard.ViewModels"
+        xmlns:models="clr-namespace:Project_Dashboard.Models"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        mc:Ignorable="d"
+        Style="{StaticResource MaterialDesignWindow}"
+        Title="Task Tracker"
+        Icon="Resources/app_icon.png"
+        Background="{DynamicResource MaterialDesign.Brush.Background}"
+        TextElement.Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized"
+        ResizeMode="NoResize">
+
+    <Window.DataContext>
+        <viewmodels:MainViewModel />
+    </Window.DataContext>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Шапка: Заголовок и кнопки управления -->
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <TextBlock Text="Мой дашборд проектов" FontSize="28" FontWeight="SemiBold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <!-- Кнопка смены темы -->
+                <Button Command="{Binding ToggleThemeCommand}" 
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        ToolTip="Сменить тему"
+                        Width="40" Height="40" Padding="0" Margin="0,0,10,0"
+                        materialDesign:ButtonAssist.CornerRadius="20"
+                        BorderBrush="{DynamicResource MaterialDesign.Brush.Primary}"
+                        Foreground="{DynamicResource MaterialDesign.Brush.Primary}">
+                    <materialDesign:PackIcon Kind="ThemeLightDark" Width="22" Height="22"/>
+                </Button>
+                <!-- Добавить задачу -->
+                <Button Command="{Binding AddTaskCommand}" 
+                        Style="{StaticResource MaterialDesignFloatingActionSecondaryButton}"
+                        ToolTip="Добавить задачу"
+                        Width="45" Height="45">
+                    <materialDesign:PackIcon Kind="Plus" Width="24" Height="24"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Шапка таблицы: Задачи и временная шкала -->
+        <Grid Grid.Row="1" Margin="0,0,0,10" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" Height="40" SnapsToDevicePixels="True">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <!-- Left Header -->
+            <TextBlock Text="Задачи" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.8" VerticalAlignment="Center" Margin="15,0,0,0"/>
+            
+            <!-- Right Header: Days of timeline -->
+            <ItemsControl Grid.Column="1" ItemsSource="{Binding TimelineHeaders}" Margin="10,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="1" Columns="30"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+
+        <!-- Список задач (Скроллируемый) -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Tasks}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type models:ProjectTask}">
+                        <Border Background="{DynamicResource MaterialDesign.Brush.Card.Background}" CornerRadius="8" Margin="0,4" Padding="5,10" SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="280"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <!-- Левая колонка: Детали задачи -->
+                                <Grid Margin="10,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                                        <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.6" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                        
+                                        <!-- Приоритет -->
+                                        <Border CornerRadius="3" Padding="6,2" HorizontalAlignment="Left" Margin="0,5,0,0">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#4CAF50"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Priority}" Value="Medium">
+                                                            <Setter Property="Background" Value="#FF9800"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Priority}" Value="High">
+                                                            <Setter Property="Background" Value="#F44336"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding Priority}" Foreground="White" FontSize="9" FontWeight="Bold"/>
+                                        </Border>
+                                    </StackPanel>
+                                    
+                                    <!-- Кнопки управления -->
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <!-- Редактировать -->
+                                        <Button Command="{Binding DataContext.EditTaskCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource MaterialDesignIconButton}" 
+                                                Width="28" Height="28" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.6" Padding="0" Margin="0,0,4,0"
+                                                ToolTip="Редактировать задачу">
+                                            <materialDesign:PackIcon Kind="Pencil" Width="18" Height="18"/>
+                                        </Button>
+                                        
+                                        <!-- Удалить -->
+                                        <Button Command="{Binding DataContext.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource MaterialDesignIconButton}" 
+                                                Width="28" Height="28" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.6" Padding="0"
+                                                ToolTip="Удалить задачу">
+                                            <materialDesign:PackIcon Kind="Delete" Width="18" Height="18"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                                
+                                <!-- Правая колонка: Диаграмма (Временная шкала) -->
+                                <Grid Grid.Column="1" Margin="10,0">
+                                    <!-- Линии сетки на фоне -->
+                                    <UniformGrid Rows="1" Columns="30" Opacity="0.3">
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                        <Border BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1,0,0,0"/>
+                                    </UniformGrid>
+                                    
+                                    <!-- Сетка для позиционирования полосы задачи -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Полоса задачи на диаграмме -->
+                                        <Grid Grid.Column="{Binding StartColumn}" Grid.ColumnSpan="{Binding ColumnSpan}" 
+                                              VerticalAlignment="Center" Height="26">
+                                            
+                                            <!-- Всплывающая подсказка с датами и деталями -->
+                                            <Grid.ToolTip>
+                                                <ToolTip Background="{DynamicResource MaterialDesign.Brush.Card.Background}" BorderBrush="{DynamicResource MaterialDesign.Brush.Primary}" BorderThickness="1" Padding="10">
+                                                    <StackPanel Width="220">
+                                                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"/>
+                                                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.7" Margin="0,5" TextWrapping="Wrap"/>
+                                                        <Separator Background="{DynamicResource MaterialDesign.Brush.TextBox.Border}"/>
+                                                        <TextBlock Text="{Binding StartDate, StringFormat='Начало: dd.MM.yyyy'}" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.8" Margin="0,2,0,0"/>
+                                                        <TextBlock Text="{Binding Deadline, StringFormat='Конец: dd.MM.yyyy'}" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.8"/>
+                                                        <TextBlock Text="{Binding Progress, StringFormat='Выполнено: {0:0}%'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </ToolTip>
+                                            </Grid.ToolTip>
+                                            
+                                            <!-- Прогресс-бар для отображения прогресса в полосе -->
+                                            <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="24" 
+                                                         BorderThickness="0" Background="{DynamicResource MaterialDesign.Brush.Background}">
+                                                <ProgressBar.Style>
+                                                    <Style TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
+                                                        <Setter Property="Foreground" Value="#F44336"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Priority}" Value="Medium">
+                                                                <Setter Property="Foreground" Value="#FF9800"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Priority}" Value="Low">
+                                                                <Setter Property="Foreground" Value="#4CAF50"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ProgressBar.Style>
+                                            </ProgressBar>
+                                            
+                                            <!-- Текст с процентом -->
+                                            <TextBlock Text="{Binding Progress, StringFormat={}{0:0}%}" 
+                                                       FontSize="10" FontWeight="Bold" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</Window>
