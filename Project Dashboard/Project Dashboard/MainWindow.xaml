@@ -22,9 +22,10 @@
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/> <!-- Шапка -->
+            <RowDefinition Height="Auto"/> <!-- Панель аналитики -->
+            <RowDefinition Height="Auto"/> <!-- Заголовки таблицы -->
+            <RowDefinition Height="*"/>    <!-- Список задач -->
         </Grid.RowDefinitions>
 
         <!-- Шапка: Заголовок и кнопки управления -->
@@ -51,8 +52,104 @@
             </StackPanel>
         </Grid>
 
+        <!-- Панель аналитики и статистики -->
+        <Grid Grid.Row="1" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Всего задач -->
+            <Border Grid.Column="0" Margin="0,0,10,0" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" CornerRadius="8" Padding="15,12" SnapsToDevicePixels="True" BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <materialDesign:PackIcon Kind="ClipboardListOutline" Width="36" Height="36" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TotalTasksCount}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"/>
+                        <TextBlock Text="Всего задач" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.6" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- В работе -->
+            <Border Grid.Column="1" Margin="0,0,10,0" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" CornerRadius="8" Padding="15,12" SnapsToDevicePixels="True" BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <materialDesign:PackIcon Kind="PlayCircleOutline" Width="36" Height="36" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding InProgressTasksCount}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"/>
+                        <TextBlock Text="В работе" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.6" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Выполнено -->
+            <Border Grid.Column="2" Margin="0,0,10,0" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" CornerRadius="8" Padding="15,12" SnapsToDevicePixels="True" BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <materialDesign:PackIcon Kind="CheckCircleOutline" Width="36" Height="36" Foreground="#4CAF50" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding CompletedTasksCount}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"/>
+                        <TextBlock Text="Выполнено" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.6" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Просрочено -->
+            <Border Grid.Column="3" Margin="0,0,10,0" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" CornerRadius="8" Padding="15,12" SnapsToDevicePixels="True" BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <materialDesign:PackIcon Kind="AlertCircleOutline" Width="36" Height="36" Foreground="#F44336" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding OverdueTasksCount}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"/>
+                        <TextBlock Text="Просрочено" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.6" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Общий прогресс (Круговой индикатор) -->
+            <Border Grid.Column="4" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" CornerRadius="8" Padding="15,12" SnapsToDevicePixels="True" BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Width="38" Height="38" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <ProgressBar Value="{Binding OverallProgressPercentage}" 
+                                     Minimum="0" Maximum="100"
+                                     Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                     Width="38" Height="38"
+                                     Foreground="{DynamicResource MaterialDesign.Brush.Primary}"/>
+                        <TextBlock Text="{Binding OverallProgressPercentage, StringFormat={}{0:0}%}" 
+                                   FontSize="10" FontWeight="Bold" 
+                                   Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Общий прогресс" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"/>
+                        <TextBlock Text="всех задач" FontSize="10" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.5" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
         <!-- Шапка таблицы: Задачи и временная шкала -->
-        <Grid Grid.Row="1" Margin="0,0,0,10" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" Height="40" SnapsToDevicePixels="True">
+        <Grid Grid.Row="2" Margin="0,0,0,10" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" Height="40" SnapsToDevicePixels="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280"/>
                 <ColumnDefinition Width="*"/>
@@ -76,7 +173,7 @@
         </Grid>
 
         <!-- Список задач (Скроллируемый) -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding Tasks}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type models:ProjectTask}">

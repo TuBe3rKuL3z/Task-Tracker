@@ -24,6 +24,41 @@ namespace Project_Dashboard.ViewModels
 
         public ObservableCollection<string> TimelineHeaders { get; } = new();
 
+        private int _totalTasksCount;
+        public int TotalTasksCount
+        {
+            get => _totalTasksCount;
+            set => SetProperty(ref _totalTasksCount, value);
+        }
+
+        private int _inProgressTasksCount;
+        public int InProgressTasksCount
+        {
+            get => _inProgressTasksCount;
+            set => SetProperty(ref _inProgressTasksCount, value);
+        }
+
+        private int _completedTasksCount;
+        public int CompletedTasksCount
+        {
+            get => _completedTasksCount;
+            set => SetProperty(ref _completedTasksCount, value);
+        }
+
+        private int _overdueTasksCount;
+        public int OverdueTasksCount
+        {
+            get => _overdueTasksCount;
+            set => SetProperty(ref _overdueTasksCount, value);
+        }
+
+        private double _overallProgressPercentage;
+        public double OverallProgressPercentage
+        {
+            get => _overallProgressPercentage;
+            set => SetProperty(ref _overallProgressPercentage, value);
+        }
+
         public MainViewModel()
         {
             _databaseService = new DatabaseService();
@@ -85,6 +120,47 @@ namespace Project_Dashboard.ViewModels
             {
                 task.UpdateTimelineOffsets(TimelineStartDate);
             }
+
+            RecalculateStatistics();
+        }
+
+        private void RecalculateStatistics()
+        {
+            int total = Tasks.Count;
+            int completed = 0;
+            int inProgress = 0;
+            int overdue = 0;
+            double sumProgress = 0;
+
+            DateTime today = DateTime.Today;
+
+            foreach (var task in Tasks)
+            {
+                sumProgress += task.Progress;
+
+                if (task.Progress >= 100)
+                {
+                    completed++;
+                }
+                else
+                {
+                    if (task.Progress > 0)
+                    {
+                        inProgress++;
+                    }
+                    
+                    if (task.Deadline.Date < today)
+                    {
+                        overdue++;
+                    }
+                }
+            }
+
+            TotalTasksCount = total;
+            CompletedTasksCount = completed;
+            InProgressTasksCount = inProgress;
+            OverdueTasksCount = overdue;
+            OverallProgressPercentage = total > 0 ? sumProgress / total : 0;
         }
 
         [RelayCommand]
