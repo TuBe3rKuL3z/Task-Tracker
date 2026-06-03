@@ -6,6 +6,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using MaterialDesignThemes.Wpf;
+using System.ComponentModel;
+using System.Windows.Data;
 
 namespace Project_Dashboard.ViewModels
 {
@@ -59,9 +61,65 @@ namespace Project_Dashboard.ViewModels
             set => SetProperty(ref _overallProgressPercentage, value);
         }
 
+        public ICollectionView TasksView { get; }
+
+        private string _searchText = "";
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                if (SetProperty(ref _searchText, value))
+                {
+                    TasksView.Refresh();
+                }
+            }
+        }
+
+        private string _selectedPriorityFilter = "Все";
+        public string SelectedPriorityFilter
+        {
+            get => _selectedPriorityFilter;
+            set
+            {
+                if (SetProperty(ref _selectedPriorityFilter, value))
+                {
+                    TasksView.Refresh();
+                }
+            }
+        }
+
+        private string _selectedStatusFilter = "Все";
+        public string SelectedStatusFilter
+        {
+            get => _selectedStatusFilter;
+            set
+            {
+                if (SetProperty(ref _selectedStatusFilter, value))
+                {
+                    TasksView.Refresh();
+                }
+            }
+        }
+
+        private string _selectedSortProperty = "Без сортировки";
+        public string SelectedSortProperty
+        {
+            get => _selectedSortProperty;
+            set
+            {
+                if (SetProperty(ref _selectedSortProperty, value))
+                {
+                    ApplySorting();
+                }
+            }
+        }
+
         public MainViewModel()
         {
             _databaseService = new DatabaseService();
+            TasksView = CollectionViewSource.GetDefaultView(Tasks);
+            TasksView.Filter = FilterTask;
 
             try
             {
@@ -122,6 +180,7 @@ namespace Project_Dashboard.ViewModels
             }
 
             RecalculateStatistics();
+            TasksView?.Refresh();
         }
 
         private void RecalculateStatistics()
@@ -161,6 +220,55 @@ namespace Project_Dashboard.ViewModels
             InProgressTasksCount = inProgress;
             OverdueTasksCount = overdue;
             OverallProgressPercentage = total > 0 ? sumProgress / total : 0;
+        }
+
+        private bool FilterTask(object obj)
+        {
+            if (obj is not ProjectTask task) return false;
+
+            // 1. Поиск по тексту
+            if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                string search = SearchText.Trim().ToLower();
+                bool matchTitle = task.Title != null && task.Title.ToLower().Contains(search);
+                bool matchDesc = task.Description != null && task.Description.ToLower().Contains(search);
+                if (!matchTitle && !matchDesc) return false;
+            }
+
+            // 2. Фильтр по приоритету
+            if (SelectedPriorityFilter != "Все")
+            {
+                if (task.Priority.ToString() != SelectedPriorityFilter)
+                    return false;
+            }
+
+            // 3. Фильтр по статусу
+            if (SelectedStatusFilter != "Все")
+            {
+                if (SelectedStatusFilter == "Выполненные" && task.Progress < 100)
+                    return false;
+                if (SelectedStatusFilter == "В процессе" && task.Progress >= 100)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private void ApplySorting()
+        {
+            TasksView.SortDescriptions.Clear();
+            if (SelectedSortProperty == "Дата начала")
+            {
+                TasksView.SortDescriptions.Add(new SortDescription("StartDate", ListSortDirection.Ascending));
+            }
+            else if (SelectedSortProperty == "Дедлайн")
+            {
+                TasksView.SortDescriptions.Add(new SortDescription("Deadline", ListSortDirection.Ascending));
+            }
+            else if (SelectedSortProperty == "Прогресс")
+            {
+                TasksView.SortDescriptions.Add(new SortDescription("Progress", ListSortDirection.Descending));
+            }
         }
 
         [RelayCommand]

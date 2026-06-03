@@ -24,6 +24,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- Шапка -->
             <RowDefinition Height="Auto"/> <!-- Панель аналитики -->
+            <RowDefinition Height="Auto"/> <!-- Поиск и фильтрация -->
             <RowDefinition Height="Auto"/> <!-- Заголовки таблицы -->
             <RowDefinition Height="*"/>    <!-- Список задач -->
         </Grid.RowDefinitions>
@@ -148,8 +149,66 @@
             </Border>
         </Grid>
 
+        <!-- Панель поиска, фильтрации и сортировки -->
+        <Border Grid.Row="2" Margin="0,0,0,15" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" CornerRadius="8" Padding="15,10" SnapsToDevicePixels="True" BorderBrush="{DynamicResource MaterialDesign.Brush.TextBox.Border}" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Поиск задач -->
+                <TextBox Grid.Column="0" 
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         materialDesign:HintAssist.Hint="Поиск по названию или описанию..."
+                         materialDesign:TextFieldAssist.HasClearButton="True"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                         Height="38" Padding="10,8" VerticalContentAlignment="Center" Margin="0,0,15,0"/>
+
+                <!-- Фильтр по приоритету -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,15,0">
+                    <TextBlock Text="Приоритет: " VerticalAlignment="Center" FontSize="12" Opacity="0.7" Margin="0,0,5,0"/>
+                    <ComboBox SelectedValue="{Binding SelectedPriorityFilter, UpdateSourceTrigger=PropertyChanged}"
+                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                              Height="38" Width="110" Padding="10,8" VerticalContentAlignment="Center">
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">Все</System:String>
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">Low</System:String>
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">Medium</System:String>
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">High</System:String>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- Фильтр по статусу -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,15,0">
+                    <TextBlock Text="Статус: " VerticalAlignment="Center" FontSize="12" Opacity="0.7" Margin="0,0,5,0"/>
+                    <ComboBox SelectedValue="{Binding SelectedStatusFilter, UpdateSourceTrigger=PropertyChanged}"
+                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                              Height="38" Width="130" Padding="10,8" VerticalContentAlignment="Center">
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">Все</System:String>
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">В процессе</System:String>
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">Выполненные</System:String>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- Сортировка -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Сортировка: " VerticalAlignment="Center" FontSize="12" Opacity="0.7" Margin="0,0,5,0"/>
+                    <ComboBox SelectedValue="{Binding SelectedSortProperty, UpdateSourceTrigger=PropertyChanged}"
+                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                              Height="38" Width="150" Padding="10,8" VerticalContentAlignment="Center">
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">Без сортировки</System:String>
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">Дата начала</System:String>
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">Дедлайн</System:String>
+                        <System:String xmlns:System="clr-namespace:System;assembly=mscorlib">Прогресс</System:String>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- Шапка таблицы: Задачи и временная шкала -->
-        <Grid Grid.Row="2" Margin="0,0,0,10" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" Height="40" SnapsToDevicePixels="True">
+        <Grid Grid.Row="3" Margin="0,0,0,10" Background="{DynamicResource MaterialDesign.Brush.Card.Background}" Height="40" SnapsToDevicePixels="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280"/>
                 <ColumnDefinition Width="*"/>
@@ -173,8 +232,8 @@
         </Grid>
 
         <!-- Список задач (Скроллируемый) -->
-        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding Tasks}">
+        <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding TasksView}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type models:ProjectTask}">
                         <Border Background="{DynamicResource MaterialDesign.Brush.Card.Background}" CornerRadius="8" Margin="0,4" Padding="5,10" SnapsToDevicePixels="True">

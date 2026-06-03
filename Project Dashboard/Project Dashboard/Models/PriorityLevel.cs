@@ -56,6 +56,74 @@ namespace Project_Dashboard.Models
             set => SetProperty(ref _progressValue, value);
         }
 
+        private string _category = "Общий";
+        public string Category
+        {
+            get => _category;
+            set
+            {
+                if (SetProperty(ref _category, value))
+                {
+                    OnPropertyChanged(nameof(CategoryBrush));
+                    OnPropertyChanged(nameof(CategoryColor));
+                }
+            }
+        }
+
+        public string CategoryBrush
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(Category)) return "#E0E0E0";
+                
+                string[] colors = {
+                    "#E8F5E9", // Light Green
+                    "#E3F2FD", // Light Blue
+                    "#FFF3E0", // Light Orange
+                    "#F3E5F5", // Light Purple
+                    "#FFE0B2", // Light Amber
+                    "#F0F4C3", // Lime
+                    "#E0F2F1", // Teal
+                    "#FFEBEE"  // Light Red
+                };
+                
+                int hash = 0;
+                foreach (char c in Category)
+                {
+                    hash += (int)c;
+                }
+                
+                return colors[Math.Abs(hash) % colors.Length];
+            }
+        }
+
+        public string CategoryColor
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(Category) || Category == "Общий") return "#6200EE"; // Default purple
+                
+                string[] colors = {
+                    "#4CAF50", // Green
+                    "#2196F3", // Blue
+                    "#FF9800", // Orange
+                    "#9C27B0", // Purple
+                    "#00BCD4", // Cyan
+                    "#E91E63", // Pink
+                    "#FF5722", // Deep Orange
+                    "#3F51B5"  // Indigo
+                };
+                
+                int hash = 0;
+                foreach (char c in Category)
+                {
+                    hash += (int)c;
+                }
+                
+                return colors[Math.Abs(hash) % colors.Length];
+            }
+        }
+
         private int _startColumn;
         public int StartColumn
         {
@@ -76,6 +144,7 @@ namespace Project_Dashboard.Models
             Deadline = DateTime.Today.AddDays(7);
             Priority = PriorityLevel.Medium;
             Progress = 0;
+            Category = "Общий";
         }
 
         public ProjectTask(string title, string description, DateTime startDate, DateTime deadline, PriorityLevel priority)
@@ -86,6 +155,7 @@ namespace Project_Dashboard.Models
             Deadline = deadline;
             Priority = priority;
             Progress = 0;
+            Category = "Общий";
         }
 
         public void UpdateTimelineOffsets(DateTime timelineStart)
