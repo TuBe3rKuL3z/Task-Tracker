@@ -3,11 +3,16 @@ using CommunityToolkit.Mvvm.Input;
 using Project_Dashboard.Models;
 using Project_Dashboard.Services;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using MaterialDesignThemes.Wpf;
 using System.ComponentModel;
 using System.Windows.Data;
+using System.Text.Json;
+using System.IO;
+using Microsoft.Win32;
+using System.Linq;
 
 namespace Project_Dashboard.ViewModels
 {
@@ -16,6 +21,8 @@ namespace Project_Dashboard.ViewModels
         private readonly DatabaseService _databaseService;
 
         public ObservableCollection<ProjectTask> Tasks { get; } = new();
+
+        public ObservableCollection<string> ExistingCategories { get; } = new();
 
         private DateTime _timelineStartDate;
         public DateTime TimelineStartDate
@@ -174,13 +181,40 @@ namespace Project_Dashboard.ViewModels
                 TimelineHeaders.Add(start.AddDays(i).ToString("dd.MM"));
             }
 
+            // Link dependencies in memory
+            foreach (var task in Tasks)
+            {
+                task.DependsOnTask = task.DependsOnTaskId.HasValue
+                    ? Tasks.FirstOrDefault(t => t.Id == task.DependsOnTaskId.Value)
+                    : null;
+            }
+
             foreach (var task in Tasks)
             {
                 task.UpdateTimelineOffsets(TimelineStartDate);
             }
 
             RecalculateStatistics();
+            UpdateCategories();
             TasksView?.Refresh();
+        }
+
+        private void UpdateCategories()
+        {
+            var uniqueCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            uniqueCategories.Add("Общий");
+            foreach (var task in Tasks)
+            {
+                if (!string.IsNullOrWhiteSpace(task.Category))
+                {
+                    uniqueCategories.Add(task.Category.Trim());
+                }
+            }
+            ExistingCategories.Clear();
+            foreach (var cat in uniqueCategories.OrderBy(c => c))
+            {
+                ExistingCategories.Add(cat);
+            }
         }
 
         private void RecalculateStatistics()
@@ -281,10 +315,12 @@ namespace Project_Dashboard.ViewModels
                 StartDate = DateTime.Today,
                 Deadline = DateTime.Today.AddDays(7),
                 Priority = PriorityLevel.Medium,
-                Progress = 0
+                Progress = 0,
+                Category = "Общий",
+                DependsOnTaskId = null
             };
 
-            var dialog = new TaskWindow(newTask)
+            var dialog = new TaskWindow(newTask, ExistingCategories, Tasks)
             {
                 Owner = Application.Current.MainWindow
             };
@@ -318,10 +354,13 @@ namespace Project_Dashboard.ViewModels
                 StartDate = task.StartDate,
                 Deadline = task.Deadline,
                 Priority = task.Priority,
-                Progress = task.Progress
+                Progress = task.Progress,
+                Category = task.Category,
+                DependsOnTaskId = task.DependsOnTaskId
             };
 
-            var dialog = new TaskWindow(clone)
+            var eligibleTasks = Tasks.Where(t => t.Id != task.Id).ToList();
+            var dialog = new TaskWindow(clone, ExistingCategories, eligibleTasks)
             {
                 Owner = Application.Current.MainWindow
             };
@@ -338,6 +377,8 @@ namespace Project_Dashboard.ViewModels
                     task.Deadline = clone.Deadline;
                     task.Priority = clone.Priority;
                     task.Progress = clone.Progress;
+                    task.Category = clone.Category;
+                    task.DependsOnTaskId = clone.DependsOnTaskId;
 
                     UpdateTimeline();
                 }
@@ -367,6 +408,138 @@ namespace Project_Dashboard.ViewModels
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Ошибка удаления задачи из БД: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        [RelayCommand]
+        private void ExportTasks()
+        {
+            try
+            {
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                    FileName = "tasks_export.json",
+                    Title = "Экспорт задач в JSON"
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    var options = new JsonSerializerOptions { WriteIndented = true };
+                    string jsonString = JsonSerializer.Serialize(Tasks, options);
+                    File.WriteAllText(saveFileDialog.FileName, jsonString);
+                    MessageBox.Show("Экспорт успешно завершен!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при экспорте задач: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        [RelayCommand]
+        private void ImportTasks()
+        {
+            try
+            {
+                var openFileDialog = new OpenFileDialog
+                {
+                    Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                    Title = "Импорт задач из JSON"
+                };
+
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    string jsonString = File.ReadAllText(openFileDialog.FileName);
+                    var importedTasks = JsonSerializer.Deserialize<List<ProjectTask>>(jsonString);
+
+                    if (importedTasks == null || importedTasks.Count == 0)
+                    {
+                        MessageBox.Show("В файле нет задач для импорта или неверный формат.", "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    var result = MessageBox.Show($"Импортировать {importedTasks.Count} задач? Существующие задачи сохранятся.", 
+                        "Подтверждение импорта", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        foreach (var task in importedTasks)
+                        {
+                            task.Id = 0;
+                            if (string.IsNullOrWhiteSpace(task.Category))
+                            {
+                                task.Category = "Общий";
+                            }
+                            int newId = _databaseService.InsertTask(task);
+                            task.Id = newId;
+                            Tasks.Add(task);
+                        }
+                        UpdateTimeline();
+                        MessageBox.Show("Импорт успешно завершен!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при импорте задач: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        [RelayCommand]
+        private void ResetDatabase()
+        {
+            var result = MessageBox.Show("Вы действительно хотите удалить ВСЕ задачи из базы данных? Это действие необратимо.", 
+                "Подтверждение сброса", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    _databaseService.ClearAllTasks();
+                    Tasks.Clear();
+                    UpdateTimeline();
+                    MessageBox.Show("База данных успешно очищена!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при очистке базы данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        [RelayCommand]
+        private void GenerateDemoData()
+        {
+            var result = MessageBox.Show("Вы хотите добавить новый набор демонстрационных задач? Существующие задачи сохранятся.", 
+                "Генерация демо-данных", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    var demo1 = new ProjectTask("Змейка 3D", "Написать логику движения камеры", DateTime.Today, DateTime.Today.AddDays(2), PriorityLevel.High) { Progress = 40, Category = "Учеба" };
+                    var demo2 = new ProjectTask("UI Редизайн", "Обновить стили кнопок до Windows 11", DateTime.Today.AddDays(1), DateTime.Today.AddDays(6), PriorityLevel.Medium) { Progress = 80, Category = "Работа" };
+                    var demo3 = new ProjectTask("Рефакторинг", "Оптимизировать загрузку данных", DateTime.Today.AddDays(2), DateTime.Today.AddDays(12), PriorityLevel.Low) { Progress = 10, Category = "Работа" };
+                    var demo4 = new ProjectTask("Уборка дома", "Навести порядок на рабочем столе", DateTime.Today, DateTime.Today.AddDays(1), PriorityLevel.Low) { Progress = 100, Category = "Личное" };
+
+                    demo1.Id = _databaseService.InsertTask(demo1);
+                    demo2.Id = _databaseService.InsertTask(demo2);
+                    demo3.Id = _databaseService.InsertTask(demo3);
+                    demo4.Id = _databaseService.InsertTask(demo4);
+
+                    Tasks.Add(demo1);
+                    Tasks.Add(demo2);
+                    Tasks.Add(demo3);
+                    Tasks.Add(demo4);
+
+                    UpdateTimeline();
+                    MessageBox.Show("Демонстрационные задачи успешно созданы!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при генерации демо-данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

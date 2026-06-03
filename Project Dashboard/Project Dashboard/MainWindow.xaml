@@ -10,6 +10,8 @@
         Style="{StaticResource MaterialDesignWindow}"
         Title="Task Tracker"
         Icon="Resources/app_icon.png"
+        FontFamily="Times New Roman"
+        FontSize="14"
         Background="{DynamicResource MaterialDesign.Brush.Background}"
         TextElement.Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"
         WindowStartupLocation="CenterScreen"
@@ -43,6 +45,42 @@
                         Foreground="{DynamicResource MaterialDesign.Brush.Primary}">
                     <materialDesign:PackIcon Kind="ThemeLightDark" Width="22" Height="22"/>
                 </Button>
+                <!-- Управление данными (Импорт/Экспорт/Сброс) -->
+                <materialDesign:PopupBox ToolTip="Управление данными (Импорт, Экспорт, Сброс)"
+                                         PlacementMode="BottomAndAlignRightEdges"
+                                         Width="40" Height="40" Margin="0,0,10,0"
+                                         Foreground="{DynamicResource MaterialDesign.Brush.Primary}">
+                    <materialDesign:PopupBox.ToggleContent>
+                        <materialDesign:PackIcon Kind="Database" Width="24" Height="24" />
+                    </materialDesign:PopupBox.ToggleContent>
+                    <StackPanel Width="220" Margin="5">
+                        <Button Command="{Binding ExportTasksCommand}" Style="{StaticResource MaterialDesignFlatButton}" HorizontalContentAlignment="Left" Padding="10,5">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Export" Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Экспорт задач (JSON)" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding ImportTasksCommand}" Style="{StaticResource MaterialDesignFlatButton}" HorizontalContentAlignment="Left" Padding="10,5">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Import" Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Импорт задач (JSON)" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Separator Margin="0,5" Background="{DynamicResource MaterialDesign.Brush.TextBox.Border}"/>
+                        <Button Command="{Binding GenerateDemoDataCommand}" Style="{StaticResource MaterialDesignFlatButton}" HorizontalContentAlignment="Left" Padding="10,5">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="DatabasePlus" Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Создать демо-данные" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding ResetDatabaseCommand}" Style="{StaticResource MaterialDesignFlatButton}" Foreground="Red" HorizontalContentAlignment="Left" Padding="10,5">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="DatabaseRemove" Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Сбросить базу данных" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </materialDesign:PopupBox>
                 <!-- Добавить задачу -->
                 <Button Command="{Binding AddTaskCommand}" 
                         Style="{StaticResource MaterialDesignFloatingActionSecondaryButton}"
@@ -254,23 +292,49 @@
                                         <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.6" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
                                         
-                                        <!-- Приоритет -->
-                                        <Border CornerRadius="3" Padding="6,2" HorizontalAlignment="Left" Margin="0,5,0,0">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="#4CAF50"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Priority}" Value="Medium">
-                                                            <Setter Property="Background" Value="#FF9800"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Priority}" Value="High">
-                                                            <Setter Property="Background" Value="#F44336"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                            <TextBlock Text="{Binding Priority}" Foreground="White" FontSize="9" FontWeight="Bold"/>
-                                        </Border>
+                                        <!-- Баджи: Приоритет и Категория -->
+                                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                            <!-- Приоритет -->
+                                            <Border CornerRadius="3" Padding="6,2" Margin="0,0,8,0">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="#4CAF50"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Priority}" Value="Medium">
+                                                                <Setter Property="Background" Value="#FF9800"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Priority}" Value="High">
+                                                                <Setter Property="Background" Value="#F44336"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="{Binding Priority}" Foreground="White" FontSize="9" FontWeight="Bold"/>
+                                            </Border>
+
+                                            <!-- Категория -->
+                                            <Border Background="{Binding CategoryBrush}" CornerRadius="3" Padding="6,2" Margin="0,0,8,0">
+                                                <TextBlock Text="{Binding Category}" Foreground="#212121" FontSize="9" FontWeight="Bold"/>
+                                            </Border>
+
+                                            <!-- Предупреждение о конфликте зависимости -->
+                                            <Border Background="#F44336" CornerRadius="3" Padding="6,2" ToolTip="Конфликт сроков с зависимой задачей!">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsDependencyConflict}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <materialDesign:PackIcon Kind="Alert" Width="10" Height="10" Foreground="White" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                                                    <TextBlock Text="Конфликт" Foreground="White" FontSize="8" FontWeight="Bold" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
                                     </StackPanel>
                                     
                                     <!-- Кнопки управления -->
@@ -355,33 +419,44 @@
                                                         <Separator Background="{DynamicResource MaterialDesign.Brush.TextBox.Border}"/>
                                                         <TextBlock Text="{Binding StartDate, StringFormat='Начало: dd.MM.yyyy'}" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.8" Margin="0,2,0,0"/>
                                                         <TextBlock Text="{Binding Deadline, StringFormat='Конец: dd.MM.yyyy'}" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.8"/>
+                                                        <TextBlock Text="{Binding Category, StringFormat='Категория: {0}'}" FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.8"/>
+                                                        <TextBlock FontSize="11" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}" Opacity="0.8">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Text" Value="{Binding DependsOnTask.Title, StringFormat='Зависит от: {0}'}"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding DependsOnTask}" Value="{x:Null}">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
                                                         <TextBlock Text="{Binding Progress, StringFormat='Выполнено: {0:0}%'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" Margin="0,3,0,0"/>
                                                     </StackPanel>
                                                 </ToolTip>
                                             </Grid.ToolTip>
                                             
                                             <!-- Прогресс-бар для отображения прогресса в полосе -->
-                                            <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="24" 
-                                                         BorderThickness="0" Background="{DynamicResource MaterialDesign.Brush.Background}">
-                                                <ProgressBar.Style>
-                                                    <Style TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
-                                                        <Setter Property="Foreground" Value="#F44336"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Priority}" Value="Medium">
-                                                                <Setter Property="Foreground" Value="#FF9800"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Priority}" Value="Low">
-                                                                <Setter Property="Foreground" Value="#4CAF50"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ProgressBar.Style>
-                                            </ProgressBar>
-                                            
-                                            <!-- Текст с процентом -->
-                                            <TextBlock Text="{Binding Progress, StringFormat={}{0:0}%}" 
-                                                       FontSize="10" FontWeight="Bold" Foreground="White"
-                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="24" BorderThickness="0" Background="{DynamicResource MaterialDesign.Brush.Background}" Foreground="{Binding CategoryColor}"/>
+                                                                                        <!-- Текст с процентом и иконка предупреждения -->
+                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                 <materialDesign:PackIcon Kind="Alert" Width="12" Height="12" Foreground="#FFEB3B" VerticalAlignment="Center" Margin="0,0,5,0" ToolTip="Конфликт сроков: начало задачи раньше завершения зависимой!">
+                                                     <materialDesign:PackIcon.Style>
+                                                         <Style TargetType="materialDesign:PackIcon">
+                                                             <Setter Property="Visibility" Value="Collapsed"/>
+                                                             <Style.Triggers>
+                                                                 <DataTrigger Binding="{Binding IsDependencyConflict}" Value="True">
+                                                                     <Setter Property="Visibility" Value="Visible"/>
+                                                                 </DataTrigger>
+                                                             </Style.Triggers>
+                                                         </Style>
+                                                     </materialDesign:PackIcon.Style>
+                                                 </materialDesign:PackIcon>
+                                                 <TextBlock Text="{Binding Progress, StringFormat={}{0:0}%}" 
+                                                            FontSize="10" FontWeight="Bold" Foreground="White"
+                                                            VerticalAlignment="Center"/>
+                                             </StackPanel>
                                         </Grid>
                                     </Grid>
                                 </Grid>

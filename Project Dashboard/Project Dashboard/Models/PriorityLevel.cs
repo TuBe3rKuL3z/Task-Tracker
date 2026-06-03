@@ -32,14 +32,26 @@ namespace Project_Dashboard.Models
         public DateTime StartDate
         {
             get => _startDate;
-            set => SetProperty(ref _startDate, value);
+            set
+            {
+                if (SetProperty(ref _startDate, value))
+                {
+                    OnPropertyChanged(nameof(IsDependencyConflict));
+                }
+            }
         }
 
         private DateTime _deadline;
         public DateTime Deadline
         {
             get => _deadline;
-            set => SetProperty(ref _deadline, value);
+            set
+            {
+                if (SetProperty(ref _deadline, value))
+                {
+                    OnPropertyChanged(nameof(IsDependencyConflict));
+                }
+            }
         }
 
         private PriorityLevel _priority;
@@ -67,6 +79,42 @@ namespace Project_Dashboard.Models
                     OnPropertyChanged(nameof(CategoryBrush));
                     OnPropertyChanged(nameof(CategoryColor));
                 }
+            }
+        }
+
+        private int? _dependsOnTaskId;
+        public int? DependsOnTaskId
+        {
+            get => _dependsOnTaskId;
+            set
+            {
+                if (SetProperty(ref _dependsOnTaskId, value))
+                {
+                    OnPropertyChanged(nameof(IsDependencyConflict));
+                }
+            }
+        }
+
+        private ProjectTask _dependsOnTask;
+        [System.Text.Json.Serialization.JsonIgnore]
+        public ProjectTask DependsOnTask
+        {
+            get => _dependsOnTask;
+            set
+            {
+                if (SetProperty(ref _dependsOnTask, value))
+                {
+                    OnPropertyChanged(nameof(IsDependencyConflict));
+                }
+            }
+        }
+
+        public bool IsDependencyConflict
+        {
+            get
+            {
+                if (DependsOnTask == null) return false;
+                return StartDate.Date < DependsOnTask.Deadline.Date;
             }
         }
 

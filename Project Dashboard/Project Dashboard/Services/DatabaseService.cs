@@ -30,7 +30,8 @@ namespace Project_Dashboard.Services
                         Deadline TEXT NOT NULL,
                         Priority INTEGER NOT NULL,
                         Progress REAL NOT NULL,
-                        Category TEXT
+                        Category TEXT,
+                        DependsOnTaskId INTEGER
                     );";
                 command.ExecuteNonQuery();
 
@@ -47,6 +48,20 @@ namespace Project_Dashboard.Services
                     migrateCommand.CommandText = "ALTER TABLE ProjectTasks ADD COLUMN Category TEXT DEFAULT 'Общий';";
                     migrateCommand.ExecuteNonQuery();
                 }
+
+                // Проверить наличие колонки DependsOnTaskId (миграция для существующей БД)
+                try
+                {
+                    var checkCommand = connection.CreateCommand();
+                    checkCommand.CommandText = "SELECT DependsOnTaskId FROM ProjectTasks LIMIT 1;";
+                    using (checkCommand.ExecuteReader()) { }
+                }
+                catch
+                {
+                    var migrateCommand = connection.CreateCommand();
+                    migrateCommand.CommandText = "ALTER TABLE ProjectTasks ADD COLUMN DependsOnTaskId INTEGER;";
+                    migrateCommand.ExecuteNonQuery();
+                }
             }
         }
 
@@ -57,7 +72,7 @@ namespace Project_Dashboard.Services
             {
                 connection.Open();
                 var command = connection.CreateCommand();
-                command.CommandText = "SELECT Id, Title, Description, StartDate, Deadline, Priority, Progress, Category FROM ProjectTasks";
+                command.CommandText = "SELECT Id, Title, Description, StartDate, Deadline, Priority, Progress, Category, DependsOnTaskId FROM ProjectTasks";
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
@@ -71,7 +86,8 @@ namespace Project_Dashboard.Services
                             Deadline = DateTime.Parse(reader.GetString(4)),
                             Priority = (PriorityLevel)reader.GetInt32(5),
                             Progress = reader.GetDouble(6),
-                            Category = reader.IsDBNull(7) ? "Общий" : reader.GetString(7)
+                            Category = reader.IsDBNull(7) ? "Общий" : reader.GetString(7),
+                            DependsOnTaskId = reader.IsDBNull(8) ? null : (int?)reader.GetInt32(8)
                         };
                         tasks.Add(task);
                     }
@@ -87,8 +103,8 @@ namespace Project_Dashboard.Services
                 connection.Open();
                 var command = connection.CreateCommand();
                 command.CommandText = @"
-                    INSERT INTO ProjectTasks (Title, Description, StartDate, Deadline, Priority, Progress, Category)
-                    VALUES ($title, $description, $startDate, $deadline, $priority, $progress, $category);
+                    INSERT INTO ProjectTasks (Title, Description, StartDate, Deadline, Priority, Progress, Category, DependsOnTaskId)
+                    VALUES ($title, $description, $startDate, $deadline, $priority, $progress, $category, $dependsOnTaskId);
                     SELECT last_insert_rowid();";
                 command.Parameters.AddWithValue("$title", task.Title);
                 command.Parameters.AddWithValue("$description", task.Description ?? "");
@@ -97,6 +113,7 @@ namespace Project_Dashboard.Services
                 command.Parameters.AddWithValue("$priority", (int)task.Priority);
                 command.Parameters.AddWithValue("$progress", task.Progress);
                 command.Parameters.AddWithValue("$category", task.Category ?? "Общий");
+                command.Parameters.AddWithValue("$dependsOnTaskId", (object)task.DependsOnTaskId ?? DBNull.Value);
                 
                 return Convert.ToInt32(command.ExecuteScalar());
             }
@@ -116,7 +133,8 @@ namespace Project_Dashboard.Services
                         Deadline = $deadline,
                         Priority = $priority,
                         Progress = $progress,
-                        Category = $category
+                        Category = $category,
+                        DependsOnTaskId = $dependsOnTaskId
                     WHERE Id = $id;";
                 command.Parameters.AddWithValue("$title", task.Title);
                 command.Parameters.AddWithValue("$description", task.Description ?? "");
@@ -125,6 +143,7 @@ namespace Project_Dashboard.Services
                 command.Parameters.AddWithValue("$priority", (int)task.Priority);
                 command.Parameters.AddWithValue("$progress", task.Progress);
                 command.Parameters.AddWithValue("$category", task.Category ?? "Общий");
+                command.Parameters.AddWithValue("$dependsOnTaskId", (object)task.DependsOnTaskId ?? DBNull.Value);
                 command.Parameters.AddWithValue("$id", task.Id);
                 
                 command.ExecuteNonQuery();
@@ -139,6 +158,17 @@ namespace Project_Dashboard.Services
                 var command = connection.CreateCommand();
                 command.CommandText = "DELETE FROM ProjectTasks WHERE Id = $id;";
                 command.Parameters.AddWithValue("$id", id);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        public void ClearAllTasks()
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+                var command = connection.CreateCommand();
+                command.CommandText = "DELETE FROM ProjectTasks;";
                 command.ExecuteNonQuery();
             }
         }
